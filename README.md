@@ -29,6 +29,7 @@ git clone https://github.com/csridge/pyblunder
 cd pyblunder # Navigate to the repo
 pip install -r requirements.txt # Install necessary packages
 ```
-- Run the bot with `python terminal_bot.py`
+## 2. Run the bot
+- Type `python terminal_bot.py`
 ## How to sync latest update of the bot
 Type this command: `git pull` (optional: reinstall packages using `pip install -r requirements.txt`)
