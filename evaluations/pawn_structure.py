@@ -1,64 +1,65 @@
 import chess
+pawn_table: dict[int, int] = {}
 
-def doubled_pawns(board: chess.Board, color: chess.Color) -> int:
-    pawns = board.pieces(chess.PAWN, color)
-    file_counts = [0] * 8 # Track the number of pawns on each file
+def pawn_hash(board: chess.Board) -> int:
+    white_pawns = int(board.pieces(chess.PAWN, chess.WHITE))
+    black_pawns = int(board.pieces(chess.PAWN, chess.BLACK))
+    return hash((white_pawns, black_pawns, board.turn))  # optionally add en passant square
 
-    for square in pawns:
-        file = chess.square_file(square)
-        file_counts[file] += 1
+def pawn_structure(board: chess.Board, color: chess.Color) -> int:
+    key = pawn_hash(board)
+    if key in pawn_table:
+        return pawn_table[key]
+    
+    total = 0
 
-    doubled = 0
-    for count in file_counts:
-        if count > 1: # More than 1 pawn on a file
-            doubled += 1
-    return -(6 * doubled) # Returns penalty based on the number of doubled files
-
-def isolated_pawns(board: chess.Board, color: bool) -> int:
-    pawns = board.pieces(chess.PAWN, color)
-    file_counts = [0] * 8
-
-    for square in pawns:
-        file = chess.square_file(square)
-        file_counts[file] += 1
-
-    isolated = 0
-    for square in pawns:
-        file = chess.square_file(square)
-        left = file_counts[file - 1] if file > 0 else 0 # If file = 0, then left is out of bound
-        right = file_counts[file + 1] if file < 7 else 0 # If file = 7, then right is out of bound
-        if left == 0 and right == 0: # No friendly pawns around -> isolated
-            isolated += 1
-
-    return -(5 * isolated)
-
-def passed_pawns(board: chess.Board, color: chess.Color) -> int:
-    pawns = board.pieces(chess.PAWN, color)
+    # Doubled pawns check
+    pawns = list(board.pieces(chess.PAWN, color))
     enemy_pawns = board.pieces(chess.PAWN, not color)
 
-    passed = 0 # Amount of passed pawns
+    file_counts = [0] * 8
+    pawn_files = [[] for _ in range(8)]  # Track rank for passed pawn check
 
     for square in pawns:
         file = chess.square_file(square)
         rank = chess.square_rank(square)
+        file_counts[file] += 1
+        pawn_files[file].append(rank)
 
-        is_passed = True # assume there is a passed pawn
+    doubled = sum(1 for count in file_counts if count > 1)
+    total -= 5 * doubled
 
-        for adj_file in [file - 1, file, file + 1]: # check for adjacent files
+    # Isolated pawns check
+    isolated = 0
+    for file in range(8):
+        if file_counts[file] == 0:
+            continue
+        left = file_counts[file - 1] if file > 0 else 0
+        right = file_counts[file + 1] if file < 7 else 0
+        if left == 0 and right == 0:
+            isolated += file_counts[file]
+    
+    total -= 5 * isolated
+    # Passed pawns check
+    passed = 0
+
+    for square in pawns:
+        file = chess.square_file(square)
+        rank = chess.square_rank(square)
+        is_passed = True
+
+        for adj_file in [file - 1, file, file + 1]:
             if not (0 <= adj_file <= 7):
                 continue
 
-            # Loop though ranks in front(depends on color)
             if color == chess.WHITE:
-                for r in range(rank + 1, 8): # ahead of white pawn
-                    sq = chess.square(adj_file, r)
-                    if sq in enemy_pawns:
+                for r in range(rank + 1, 8):
+                    if chess.square(adj_file, r) in enemy_pawns:
                         is_passed = False
                         break
             else:
-                for r in range(rank - 1, -1, -1): # ahead of black pawn
-                    sq = chess.square(adj_file, r)
-                    if sq in enemy_pawns:
+                for r in range(rank - 1, -1, -1):
+                    if chess.square(adj_file, r) in enemy_pawns:
                         is_passed = False
                         break
 
@@ -66,9 +67,7 @@ def passed_pawns(board: chess.Board, color: chess.Color) -> int:
                 break
 
         if is_passed:
-            passed += 1
+            distance = 7 - rank if color == chess.WHITE else rank
+            total += 10 * (7 - distance)
 
-    return 15 * passed
-
-def pawn_structure(board: chess.Board, color: chess.Color) -> int:
-    return doubled_pawns(board, color) + isolated_pawns(board, color) + passed_pawns(board, color)
+    return total

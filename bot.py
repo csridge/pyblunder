@@ -135,11 +135,12 @@ def negamax(board: chess.Board, depth: int, alpha: float, beta: float) -> Tuple[
             history_table[from_sq][to_sq] += depth * depth
             break  # Beta cutoff
     
-    transposition_table[key] = {
-        "depth": depth,
-        "evaluation": max_eval,
-        "move": best_move
-    }
+    if depth >= 3:
+        transposition_table[key] = {
+            "depth": depth,
+            "evaluation": max_eval,
+            "move": best_move
+        }
     return max_eval, best_move
 
 def parse_input_move(board: chess.Board, move_str: str) -> Optional[chess.Move]:

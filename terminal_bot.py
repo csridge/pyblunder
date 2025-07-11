@@ -28,7 +28,7 @@ def main():
             start = time.time()
             eval, move = negamax(board, 4, float('-inf'), float('inf'))
             elapsed = time.time() - start
-            print(f"Bot plays: {board.san(move)}  (Eval: {eval:.2f}, Time: {elapsed:.2f}s)")
+            print(f"Bot plays: {board.san(move)}  (Eval: {(eval/100):.2f}, Time: {elapsed:.2f}s)")
             board.push(move)
         print(board)
         print()
