@@ -30,13 +30,16 @@ def parse_input_move(board: chess.Board, move_str: str) -> chess.Move | None:
 
 def main():
     board = chess.Board()
-
     while not board.is_game_over():
         if board.turn == chess.WHITE:
             user_input = input("Enter your move (e.g., e4 or e2e4): ")
             if user_input.lower() == "quit":
                 sys.exit()
             move = parse_input_move(board, user_input)
+            if not move:
+                print("Move can't be empty.")
+                continue
+
             if move in board.legal_moves:
                 board.push(move)
             else:
@@ -47,6 +50,9 @@ def main():
             start = time.time()
             eval, move = get_move(board)
             elapsed = time.time() - start
+            if not move:
+                print("There are no legal moves left.")
+                continue
             print(f"Bot plays: {board.san(move)}  (Eval: {(eval/100):.2f}, Time: {elapsed:.2f}s)")
             board.push(move)
         print(board)

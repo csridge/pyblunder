@@ -33,7 +33,6 @@ try:
                 return None  # Invalid input
 
     print(f"{board}\n\n")
-
     def main():
         board = chess.Board()
 

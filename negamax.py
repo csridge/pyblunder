@@ -48,7 +48,7 @@ def quiescenceSearch(board: chess.Board, alpha: float, beta: float):
     DELTA_MARGIN = 200
     stand_pat: float = evaluate(board)
 
-    noisy_moves = [move for move in board.legal_moves if board.is_capture(move)]
+    noisy_moves = [move for move in board.legal_moves if board.is_capture(move) or board.is_en_passant(move)]
     best_eval: float = stand_pat
     if best_eval >= beta:
         return best_eval
@@ -56,9 +56,17 @@ def quiescenceSearch(board: chess.Board, alpha: float, beta: float):
         alpha = best_eval
 
     for move in noisy_moves:
-        captured_piece: chess.Piece = board.piece_at(move.to_square)
-        capturing_piece: chess.Piece = board.piece_at(move.from_square)
-        gain = pieces_val[captured_piece.piece_type] - pieces_val[capturing_piece.piece_type]
+        capturing_piece = board.piece_at(move.from_square)
+
+        if board.is_en_passant(move):
+            captured_piece = chess.Piece(chess.PAWN, not board.turn)
+        else:
+            captured_piece = board.piece_at(move.to_square)
+
+        if captured_piece is not None and capturing_piece is not None:
+            gain = pieces_val[captured_piece.piece_type] - pieces_val[capturing_piece.piece_type]
+        else:
+            gain = 0
         if stand_pat + gain + DELTA_MARGIN < alpha:
             return alpha # this capture doesnt improve the material much, therefore pruning
         board.push(move)
