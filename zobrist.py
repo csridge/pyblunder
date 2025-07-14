@@ -1,8 +1,9 @@
 import random
 import chess
 
-zobrist_table = [[[random.getrandbits(64) for _ in range(64)] for _ in range(2)] for _ in range(6)]
-zobrist_castling = [random.getrandbits(64) for _ in range(16)]
+# type annotation just in case i forgot how many dimensions do these have
+zobrist_table: list[list[list[int]]] = [[[random.getrandbits(64) for _ in range(64)] for _ in range(2)] for _ in range(6)]
+zobrist_castling: list[int] = [random.getrandbits(64) for _ in range(16)]
 zobrist_en_passant = [random.getrandbits(64) for _ in range(8)]
 zobrist_black_to_move = random.getrandbits(64)
 
@@ -34,7 +35,15 @@ def compute_zobrist_hash(board: chess.Board) -> int:
         h ^= zobrist_en_passant[file]
 
     # Side to move
-    if board.turn == chess.BLACK:
-        h ^= zobrist_black_to_move
+    h ^= zobrist_black_to_move if board.turn == chess.BLACK else 0
 
+    return h
+
+pawn_zobrist_table = [[random.getrandbits(64) for _ in range(64)] for _ in range(2)]
+def compute_pawn_hash(board: chess.Board) -> int:
+    h = 0
+    for square, piece in board.piece_map().items():
+        if piece and piece.piece_type == chess.PAWN:
+            color = 0 if piece.color == chess.WHITE else 1
+            h ^= pawn_zobrist_table[color][square]
     return h
