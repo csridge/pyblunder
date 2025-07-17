@@ -55,8 +55,10 @@ def sort_moves(board: chess.Board):
 def quiescenceSearch(board: chess.Board, alpha: float, beta: float):
     DELTA_MARGIN = 200
     stand_pat: float = evaluate(board)
-
     noisy_moves = [move for move in board.legal_moves if board.is_capture(move) or board.is_en_passant(move)]
+    if not noisy_moves:
+        return stand_pat
+    
     best_eval: float = stand_pat
     if best_eval >= beta:
         return best_eval
@@ -91,7 +93,13 @@ def quiescenceSearch(board: chess.Board, alpha: float, beta: float):
 
 position_evaluated: int = 0
 transposition_table: dict = {}
-def negamax(board: chess.Board, depth: int, alpha: float, beta: float, is_root: bool = False, max_depth: int = 4) -> tuple[float, Optional[chess.Move]]:
+MAX_DEPTH = 6
+def negamax(board: chess.Board, 
+            depth: int = MAX_DEPTH, 
+            alpha: float = float('-inf'), 
+            beta: float = float('inf'), 
+            is_root: bool = False, 
+            max_depth: int = MAX_DEPTH) -> tuple[float, Optional[chess.Move]]:
     key = compute_zobrist_hash(board)
 
     if key in transposition_table:
@@ -118,17 +126,17 @@ def negamax(board: chess.Board, depth: int, alpha: float, beta: float, is_root: 
         board.push(move)
 
         if i == 0:
-            eval_score, _ = negamax(board, depth - 1, -beta, -alpha, is_root=False)
+            eval_score, _ = negamax(board, depth - 1, -beta, -alpha, is_root=False, max_depth=max_depth)
             evaluation = -eval_score
         else:
             # Null window search
-            eval_score, _ = negamax(board, depth - 1, -alpha - 1, -alpha, is_root=False)
+            eval_score, _ = negamax(board, depth - 1, -alpha - 1, -alpha, is_root=False, max_depth=max_depth)
             evaluation = -eval_score
             # Fail-high: re-search with full window
             if alpha < evaluation < beta:
                 eval_score, _ = negamax(board, depth - 1, -beta, -evaluation, is_root=False)
                 evaluation = -eval_score
-        if depth == max_depth:
+        if is_root and best_move:
             print(f"🔍 Move: {move} — Eval: {evaluation:.2f}")
         board.pop()
 

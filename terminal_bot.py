@@ -4,7 +4,7 @@ import time
 from negamax import negamax
 from evaluate import evaluate
 import sys
-MAX_DEPTH = 4
+MAX_DEPTH = 6
 def get_move(board: chess.Board):
     try:
         if board.fullmove_number <= 12:
@@ -29,7 +29,7 @@ def parse_input_move(board: chess.Board, move_str: str) -> chess.Move | None:
             return None
 
 def main():
-    board = chess.Board()
+    board = chess.Board('rn1qkb1r/pp3ppp/3p1n2/1Bp1p3/4P3/1PN2P1P/P1PP1P2/R1BQK2R b KQkq - 2 7')
     while not board.is_game_over():
         if board.turn == chess.WHITE:
             user_input = input("Enter your move (e.g., e4 or e2e4): ")

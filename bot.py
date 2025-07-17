@@ -22,7 +22,7 @@ try:
         except FileNotFoundError:
             print("Opening book file not found.")
 
-        return negamax(board, MAX_DEPTH, float('-inf'), float('inf'))
+        return negamax(board, depth=MAX_DEPTH, alpha=float('-inf'), beta=float('inf'), is_root=True, max_depth=MAX_DEPTH)
     def parse_input_move(board: chess.Board, move_str: str) -> Optional[chess.Move]:
         try:
             return board.parse_san(move_str)
