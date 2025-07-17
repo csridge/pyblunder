@@ -1,20 +1,18 @@
 import chess
 from zobrist import compute_zobrist_hash
 from typing import Optional
-from evaluate import evaluate
+from evaluate import evaluate, pst
 pieces_val = {
     chess.PAWN: 100,
     chess.KNIGHT: 320,
     chess.BISHOP: 330,
     chess.ROOK: 500,
     chess.QUEEN: 900,
-    chess.KING: 69420 # must be this number
+    chess.KING: 2000 # must be this number
 }
-
-MAX_DEPTH = 4
 # minimax algorithm + some opmizations
 
-history_table = [[0 for _ in range(64)] for _ in range(64)] # Initialize table with a 2x2 array
+history_table = [[0]*64 for _ in range(64)] # Initialize table with a 2x2 array
 def move_score(board: chess.Board, move: chess.Move) -> int:
     score = 0
 
@@ -30,15 +28,25 @@ def move_score(board: chess.Board, move: chess.Move) -> int:
         score += 30
 
     if board.is_castling(move):
-        score += 100
+        score += 300
+    material = sum(
+        pieces_val[piece.piece_type]
+        for piece in board.piece_map().values()
+        if piece.piece_type != chess.KING
+        )
 
+    in_endgame = material <= 13
+    if board.piece_type_at(move.from_square) == chess.KING and not board.is_castling(move):
+        if not in_endgame:
+            score -= 200 # discourages random king moves in the opening and middlegame
+
+    
     if move.promotion:
         score += pieces_val[move.promotion]
 
     from_sq, to_sq = move.from_square, move.to_square
     score += history_table[from_sq][to_sq]
     
-
     return score
 
 def sort_moves(board: chess.Board):
@@ -83,7 +91,7 @@ def quiescenceSearch(board: chess.Board, alpha: float, beta: float):
 
 position_evaluated: int = 0
 transposition_table: dict = {}
-def negamax(board: chess.Board, depth: int, alpha: float, beta: float) -> tuple[float, Optional[chess.Move]]:
+def negamax(board: chess.Board, depth: int, alpha: float, beta: float, is_root: bool = False, max_depth: int = 4) -> tuple[float, Optional[chess.Move]]:
     key = compute_zobrist_hash(board)
 
     if key in transposition_table:
@@ -110,18 +118,18 @@ def negamax(board: chess.Board, depth: int, alpha: float, beta: float) -> tuple[
         board.push(move)
 
         if i == 0:
-            eval_score, _ = negamax(board, depth - 1, -beta, -alpha)
+            eval_score, _ = negamax(board, depth - 1, -beta, -alpha, is_root=False)
             evaluation = -eval_score
         else:
             # Null window search
-            eval_score, _ = negamax(board, depth - 1, -alpha - 1, -alpha)
+            eval_score, _ = negamax(board, depth - 1, -alpha - 1, -alpha, is_root=False)
             evaluation = -eval_score
-
             # Fail-high: re-search with full window
             if alpha < evaluation < beta:
-                eval_score, _ = negamax(board, depth - 1, -beta, -evaluation)
+                eval_score, _ = negamax(board, depth - 1, -beta, -evaluation, is_root=False)
                 evaluation = -eval_score
-
+        if depth == max_depth:
+            print(f"🔍 Move: {move} — Eval: {evaluation:.2f}")
         board.pop()
 
         if evaluation > max_eval:
@@ -141,3 +149,4 @@ def negamax(board: chess.Board, depth: int, alpha: float, beta: float) -> tuple[
             "move": best_move
         }
     return max_eval, best_move
+print(pst[chess.KING])

@@ -8,16 +8,16 @@ MAX_DEPTH = 4
 def get_move(board: chess.Board):
     try:
         if board.fullmove_number <= 12:
-            with chess.polyglot.open_reader("baron30.bin") as reader:
+            with chess.polyglot.open_reader("komodo.bin") as reader:
                 move = reader.weighted_choice(board).move
                 evaluation = evaluate(board)
                 return evaluation, move
     except IndexError:
-        print("No book moves found.")
+        pass
     except FileNotFoundError:
         print("Opening book file not found.")
     
-    return negamax(board, MAX_DEPTH, float('-inf'), float('inf'))
+    return negamax(board, MAX_DEPTH, float('-inf'), float('inf'), is_root=True)
 
 def parse_input_move(board: chess.Board, move_str: str) -> chess.Move | None:
     try:
@@ -37,7 +37,7 @@ def main():
                 sys.exit()
             move = parse_input_move(board, user_input)
             if not move:
-                print("Move can't be empty.")
+                print("Illgal move. Please try again.")
                 continue
 
             if move in board.legal_moves:

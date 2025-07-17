@@ -38,12 +38,3 @@ def compute_zobrist_hash(board: chess.Board) -> int:
     h ^= zobrist_black_to_move if board.turn == chess.BLACK else 0
 
     return h
-
-pawn_zobrist_table = [[random.getrandbits(64) for _ in range(64)] for _ in range(2)]
-def compute_pawn_hash(board: chess.Board) -> int:
-    h = 0
-    for square, piece in board.piece_map().items():
-        if piece and piece.piece_type == chess.PAWN:
-            color = 0 if piece.color == chess.WHITE else 1
-            h ^= pawn_zobrist_table[color][square]
-    return h

@@ -1,55 +1,71 @@
 import chess
 from evaluations.pawn_structure_arr import arr_files, arr_front_span, arr_neighbor_files
-from zobrist import compute_pawn_hash
+import random
+# import time
 
-def doubled_pawns(board:chess.Board, color: chess.Color):
-    pawns = list(board.pieces(chess.PAWN, color))
-    # Doubled pawns check
+random.seed(3333)
+pawn_zobrist_table = [[random.getrandbits(64) for _ in range(64)] for _ in range(2)]
+
+def compute_pawn_hash(board: chess.Board) -> int:
+    h = 0
+    for square, piece in board.piece_map().items():
+        if piece and piece.piece_type == chess.PAWN:
+            color: bool = piece.color
+            h ^= pawn_zobrist_table[color][square] # chess.Color is a bool, therefore it's also an int
+    return h
+
+def doubled_pawns(board: chess.Board, color: chess.Color) -> int:
+    pawns: chess.SquareSet = board.pieces(chess.PAWN, color)
+    pawn_bb = board.pieces_mask(chess.PAWN, color)
     doubled = 0
-    for square in pawns:
-        file = chess.square_file(square)
-        pawns_of_file = arr_files[file] & board.pieces_mask(chess.PAWN, color)
-        if pawns_of_file & (pawns_of_file - 1):
-            """When a number n is a power of 2 (i.e only one bit is set), means the current file only has 1 pawn
-            n & (n - 1) == 0.
-            Therefore, if n & (n - 1) is non-zero, the current file has more than 1 pawn, 
-            therefore they are doubled pawns."""
+
+    for sq in pawns:
+        file = sq & 7
+        pawns_on_file = arr_files[file] & pawn_bb
+        if pawns_on_file & (pawns_on_file - 1):
             doubled += 1
-    return -5 * doubled
+    
+    return doubled
 
-def isolated_pawns(board: chess.Board, color: chess.Color):
-    pawns = list(board.pieces(chess.PAWN, color))
+def isolated_pawns(board: chess.Board, color: chess.Color) -> int:
+    pawns: chess.SquareSet = board.pieces(chess.PAWN, color)
+    pawn_bb = board.pieces_mask(chess.PAWN, color)
     isolated = 0
-    for square in pawns:
-        file = square & 7
-        if (arr_neighbor_files[file] & board.pieces_mask(chess.PAWN, color)) == 0:
-            """The bitwise AND gives the only square where a pawn and a neighbor file overlap.
-            If the result is 0, no pawns are on the adjacent file, therefore the current pawn is isolated."""
+
+    for sq in pawns:
+        file = sq & 7
+        if (arr_neighbor_files[file] & pawn_bb) == 0:
             isolated += 1
-    return -5 * isolated
+    return isolated
 
-def passed_pawns(board: chess.Board, color: chess.Color):
-    pawns = list(board.pieces(chess.PAWN, color))
-    enemy_pawns: chess.Bitboard = board.pieces_mask(chess.PAWN, not color)
-    passed_score = 0
-    for square in pawns:
-        if (arr_front_span[color][square] & enemy_pawns) == 0:
-            rank = square >> 3
-            passed_score += 20 * (8 - rank) # The more close to promotion, the more score gained
 
-    return passed_score
+def passed_pawns(board: chess.Board, color: chess.Color) -> int:
+    pawns = board.pieces_mask(chess.PAWN, color)
+    enemy_pawns = board.pieces_mask(chess.PAWN, not color)
+    passed = 0
+    bb = pawns
+    while bb:
+        r = bb & -bb
+        square = r.bit_length() - 1
+        bb ^= r
+
+        if not arr_front_span[color][square] & enemy_pawns:
+            passed += 1
+    return passed
+
 
 pawn_table: dict[int, int] = {}
-def pawn_structure(board: chess.Board, color: chess.Color) -> int:
+def pawn_structure(board: chess.Board) -> int:
     key = compute_pawn_hash(board)
     if key in pawn_table:
         return pawn_table[key]
     
-    total = 0
-    total += doubled_pawns(board, color)
-    total += isolated_pawns(board, color)
-    total += passed_pawns(board, color)
+    structure_score = (
+        -5 * (doubled_pawns(board, chess.WHITE) - doubled_pawns(board, chess.BLACK))
+        - 7  * (isolated_pawns(board, chess.WHITE) - isolated_pawns(board, chess.BLACK))
+        + 20 * (passed_pawns(board, chess.WHITE) - passed_pawns(board, chess.BLACK))
+    )
 
-    pawn_table[key] = total
+    pawn_table[key] = structure_score
 
-    return total
+    return structure_score

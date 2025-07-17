@@ -1,13 +1,99 @@
 import chess
-from pst import pst
 from evaluations.pawn_structure import pawn_structure
+pst_king_midgame = [
+    -90, -100, -100, -120, -120, -100, -100, -90,
+    -90, -100, -100, -120, -120, -100, -100, -90,
+    -90, -100, -100, -120, -120, -100, -100, -90,
+    -90, -100, -100, -120, -120, -100, -100, -90,
+    -60, -80, -80, -100, -100, -80, -80, -60,
+    -30, -50, -60, -60, -60, -60, -50, -30,
+     -5,  -5, -45, -60, -60, -30,  -5,  -5,
+    +80, +100, +30, -15,   0, +30, +100, +80
+]
+    
+pst_king_endgame = [
+-50,-40,-30,-20,-20,-30,-40,-50,
+-30,-20,-10,  0,  0,-10,-20,-30,
+-30,-10, 20, 30, 30, 20,-10,-30,
+-30,-10, 30, 40, 40, 30,-10,-30,
+-30,-10, 30, 40, 40, 30,-10,-30,
+-30,-10, 20, 30, 30, 20,-10,-30,
+-30,-30,  0,  0,  0,  0,-30,-30,
+-50,-30,-30,-30,-30,-30,-30,-50
+]
+pst = {
+    chess.PAWN: [
+        0,  0,  0,  0,  0,  0,  0,  0,
+        50, 50, 50, 50, 50, 50, 50, 50,
+        10, 10, 20, 30, 30, 20, 10, 10,
+        5,  5, 10, 25, 25, 10,  5,  5,
+        0,  0,  0, 20, 20,  0,  0,  0,
+        5, -5,-10,  0,  0,-10, -5,  5,
+        5, 10, 10,-20,-20, 10, 10,  5,
+        0,  0,  0,  0,  0,  0,  0,  0
+    ],
+    chess.KNIGHT: [
+        -50,-40,-30,-30,-30,-30,-40,-50,
+        -40,-20,  0,  0,  0,  0,-20,-40,
+        -30,  0, 10, 15, 15, 10,  0,-30,
+        -30,  5, 15, 20, 20, 15,  5,-30,
+        -30,  0, 15, 20, 20, 15,  0,-30,
+        -30,  5, 10, 15, 15, 10,  5,-30,
+        -40,-20,  0,  5,  5,  0,-20,-40,
+        -50,-40,-30,-30,-30,-30,-40,-50
+    ],
+
+    chess.BISHOP: [
+        -20,-10,-10,-10,-10,-10,-10,-20,
+        -10,  0,  0,  0,  0,  0,  0,-10,
+        -10,  0,  5, 10, 10,  5,  0,-10,
+        -10,  5,  5, 10, 10,  5,  5,-10,
+        -10,  0, 10, 10, 10, 10,  0,-10,
+        -10, 10, 10, 10, 10, 10, 10,-10,
+        -10,  5,  0,  0,  0,  0,  5,-10,
+        -20,-10,-10,-10,-10,-10,-10,-20
+    ],
+
+    chess.ROOK: [
+        0,  0,  0,  0,  0,  0,  0,  0,
+        5, 10, 10, 10, 10, 10, 10,  5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        -5,  0,  0,  0,  0,  0,  0, -5,
+        0,  0,  0,  5,  5,  0,  0,  0
+    ],
+
+    chess.QUEEN: [
+        -20,-10,-10, -5, -5,-10,-10,-20,
+        -10,  0,  0,  0,  0,  0,  0,-10,
+        -10,  0,  5,  5,  5,  5,  0,-10,
+         -5,  0,  5,  5,  5,  5,  0, -5,
+          0,  0,  5,  5,  5,  5,  0, -5,
+        -10,  5,  5,  5,  5,  5,  0,-10,
+        -10,  0,  5,  0,  0,  0,  0,-10,
+        -20,-10,-10, -5, -5,-10,-10,-20],
+
+    chess.KING: [
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -30,-40,-40,-50,-50,-40,-40,-30,
+        -20,-30,-30,-40,-40,-30,-30,-20,
+        -10,-20,-20,-20,-20,-20,-20,-10,
+        20, 20,  0,  0,  0,  0, 20, 20,
+        20, 30, 10,  0,  0, 10, 30, 20
+]
+}
+
 base_values = {
     chess.PAWN: 100,
     chess.KNIGHT: 320,
     chess.BISHOP: 330,
     chess.ROOK: 500,
     chess.QUEEN: 900,
-    chess.KING: 69420 # must be this number
+    chess.KING: 20000 # must be this number
 }
 pieces_values = {chess.WHITE: base_values, chess.BLACK: base_values}
 
@@ -20,9 +106,7 @@ def evaluate(board: chess.Board):
     score = {chess.WHITE: 0, chess.BLACK: 0}
     pieces: dict[chess.Square, chess.Piece] = board.piece_map()
 
-    white_pawn_score: int = pawn_structure(board, chess.WHITE)
-    black_pawn_score: int = pawn_structure(board, chess.BLACK)
-    pawn_structure_score = white_pawn_score - black_pawn_score
+    pawn_structure_score = pawn_structure(board)
         
     for square, piece in pieces.items():
         color = piece.color
@@ -30,6 +114,8 @@ def evaluate(board: chess.Board):
         index = square if color == chess.WHITE else square ^ 0x38  # vertically flip a square.
                                                                    # being a bit obscure, fun isnt it?
         score[color] += pieces_values[color][piecetype] + pst[piecetype][index]
+
     white, black = score[chess.WHITE], score[chess.BLACK]
 
-    return (white - black) + pawn_structure_score
+    total = (white - black) + pawn_structure_score
+    return total if board.turn == chess.WHITE else -total
