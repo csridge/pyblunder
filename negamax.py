@@ -1,7 +1,7 @@
 import chess
 from zobrist import compute_zobrist_hash
 from typing import Optional
-from evaluate import evaluate, pst
+from evaluate import evaluate
 pieces_val = {
     chess.PAWN: 100,
     chess.KNIGHT: 320,
@@ -77,7 +77,7 @@ def quiescenceSearch(board: chess.Board, alpha: float, beta: float):
             gain = pieces_val[captured_piece.piece_type] - pieces_val[capturing_piece.piece_type]
         else:
             gain = 0
-        if stand_pat + gain + DELTA_MARGIN < alpha:
+        if gain + DELTA_MARGIN < alpha:
             return alpha # this capture doesnt improve the material much, therefore pruning
         board.push(move)
         evaluation = -quiescenceSearch(board, -beta, -alpha)
@@ -93,13 +93,13 @@ def quiescenceSearch(board: chess.Board, alpha: float, beta: float):
 
 position_evaluated: int = 0
 transposition_table: dict = {}
-MAX_DEPTH = 6
+MAX_DEPTH = 4
 def negamax(board: chess.Board, 
             depth: int = MAX_DEPTH, 
             alpha: float = float('-inf'), 
             beta: float = float('inf'), 
             is_root: bool = False, 
-            max_depth: int = MAX_DEPTH) -> tuple[float, Optional[chess.Move]]:
+            ) -> tuple[float, Optional[chess.Move]]:
     key = compute_zobrist_hash(board)
 
     if key in transposition_table:
@@ -126,19 +126,20 @@ def negamax(board: chess.Board,
         board.push(move)
 
         if i == 0:
-            eval_score, _ = negamax(board, depth - 1, -beta, -alpha, is_root=False, max_depth=max_depth)
+            eval_score, _ = negamax(board, depth - 1, -beta, -alpha, is_root=False)
+            
             evaluation = -eval_score
         else:
             # Null window search
-            eval_score, _ = negamax(board, depth - 1, -alpha - 1, -alpha, is_root=False, max_depth=max_depth)
+            eval_score, _ = negamax(board, depth - 1, -beta, -alpha, is_root=False)
             evaluation = -eval_score
             # Fail-high: re-search with full window
             if alpha < evaluation < beta:
-                eval_score, _ = negamax(board, depth - 1, -beta, -evaluation, is_root=False)
+                eval_score, _ = negamax(board, depth - 1, -beta, -alpha, is_root=False)
                 evaluation = -eval_score
-        if is_root and best_move:
-            print(f"🔍 Move: {move} — Eval: {evaluation:.2f}")
         board.pop()
+        # if is_root and best_move:
+            # print(f"🔍 Move: {board.san(move)} — Eval: {(evaluation/100):.2f} pawns")
 
         if evaluation > max_eval:
             max_eval = evaluation
@@ -157,4 +158,3 @@ def negamax(board: chess.Board,
             "move": best_move
         }
     return max_eval, best_move
-print(pst[chess.KING])

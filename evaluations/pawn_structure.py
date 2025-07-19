@@ -60,7 +60,7 @@ def pawn_structure(board: chess.Board) -> int:
     if key in pawn_table:
         return pawn_table[key]
     
-    structure_score = (
+    structure_score: int = (
         -5 * (doubled_pawns(board, chess.WHITE) - doubled_pawns(board, chess.BLACK))
         - 5  * (isolated_pawns(board, chess.WHITE) - isolated_pawns(board, chess.BLACK))
         + 20 * (passed_pawns(board, chess.WHITE) - passed_pawns(board, chess.BLACK))
